@@ -1,99 +1,105 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db } from '../firebaseConfig';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp
+} from 'firebase/firestore';
 
-const NOTES_KEY = 'NOTES_V1';
-const SEARCH_HISTORY_KEY = 'SEARCH_HISTORY_V1';
+const notesCollection = collection(db, 'notes');
+const historyCollection = collection(db, 'searchHistory');
 
-// Create a new note object
-export const createNote = (title, content, tags = [], targetDate = null) => ({
-  id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-  title: title?.trim() || '',
-  content: content?.trim() || '',
-  tags: tags || [],
-  targetDate: targetDate,
-  dateCreated: new Date().toISOString(),
-  dateModified: null,
-});
-
-// Retrieve all notes
+// 1. Get Notes
 export const getNotes = async () => {
   try {
-    const json = await AsyncStorage.getItem(NOTES_KEY);
-    return json ? JSON.parse(json) : [];
-  } catch (e) {
-    console.error('Failed reading notes', e);
+    const q = query(notesCollection, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error fetching notes:", error);
     return [];
   }
 };
 
-// Save notes array
-export const saveNotes = async (notes) => {
+// 2. CHANGE: Name changed to saveNote (from addNote)
+export const saveNote = async (note) => {
   try {
-    await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-  } catch (e) {
-    console.error('Failed saving notes', e);
+    await addDoc(notesCollection, {
+      title: note.title,
+      content: note.content,
+      category: note.category,
+      date: note.date,
+      createdAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    console.error("Error adding note:", error);
+    return false;
   }
 };
 
-export const addNote = async (note) => {
-  const notes = await getNotes();
-  const newNotes = [note, ...notes];
-  await saveNotes(newNotes);
+// 3. Update Note
+export const updateNote = async (updatedNote) => {
+  try {
+    const noteRef = doc(db, 'notes', updatedNote.id);
+    const { id, ...dataWithoutId } = updatedNote;
+    await updateDoc(noteRef, {
+      ...dataWithoutId,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error("Error updating note:", error);
+    return false;
+  }
 };
 
-export const updateNote = async (updated) => {
-  const notes = await getNotes();
-  const newNotes = notes.map(n => (n.id === updated.id ? updated : n));
-  await saveNotes(newNotes);
-};
-
+// 4. Delete Note
 export const deleteNote = async (id) => {
-  const notes = await getNotes();
-  const newNotes = notes.filter(n => n.id !== id);
-  await saveNotes(newNotes);
+  try {
+    await deleteDoc(doc(db, 'notes', id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting note:", error);
+    return false;
+  }
 };
 
-export const clearAll = async () => {
-  await AsyncStorage.removeItem(NOTES_KEY);
-  await AsyncStorage.removeItem(SEARCH_HISTORY_KEY);
-};
-
-// Search history functions
+// 5. Get Search History
 export const getSearchHistory = async () => {
   try {
-    const json = await AsyncStorage.getItem(SEARCH_HISTORY_KEY);
-    return json ? JSON.parse(json) : [];
-  } catch (e) {
-    console.error('Failed reading search history', e);
+    const q = query(historyCollection, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data().term);
+  } catch (error) {
     return [];
   }
 };
 
-export const addToSearchHistory = async (query) => {
-  if (!query || !query.trim()) return;
-  const history = await getSearchHistory();
-  const trimmed = query.trim();
-  const newHistory = [trimmed, ...history.filter(h => h !== trimmed)].slice(0, 10);
+// 6. Save Search Term
+export const saveSearchTerm = async (term) => {
   try {
-    await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
-  } catch (e) {
-    console.error('Failed saving search history', e);
-  }
+    if (!term) return;
+    await addDoc(historyCollection, {
+      term: term,
+      createdAt: serverTimestamp()
+    });
+  } catch (error) { }
 };
 
+// 7. Clear History
 export const clearSearchHistory = async () => {
   try {
-    await AsyncStorage.removeItem(SEARCH_HISTORY_KEY);
-  } catch (e) {
-    console.error('Failed clearing search history', e);
-  }
-};
-
-export const removeFromSearchHistory = async (itemToRemove) => {
-  const history = await getSearchHistory();
-  const newHistory = history.filter(item => item !== itemToRemove);
-  try {
-    await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
-  } catch (e) {
-    console.error('Failed removing from search history', e);
-  }
+    const snapshot = await getDocs(historyCollection);
+    const deletePromises = snapshot.docs.map(d => deleteDoc(doc(db, 'searchHistory', d.id)));
+    await Promise.all(deletePromises);
+  } catch (error) { }
 };
