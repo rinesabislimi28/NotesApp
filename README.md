@@ -4,21 +4,9 @@ A modern, high-performance note-taking application built with **React Native (Ex
 
 ## 📱 App Preview
 
-Home Light Mode
-
-Home Dark Mode
-
-Create New Note
-
-Edit & Delete
-
-![Light](./screenshots/home-light-mode.jpeg)
-
-![Dark](./screenshots/home-dark-mode.jpeg)
-
-![Create](./screenshots/create-note.jpeg)
-
-![Edit](./screenshots/edit-delete.jpeg)
+| Home Light Mode | Home Dark Mode | Create New Note | Edit & Delete |
+| :---: | :---: | :---: | :---: |
+| ![Light](./screenshots/home-light-mode.jpeg) | ![Dark](./screenshots/home-dark-mode.jpeg) | ![Create](./screenshots/create-note.jpeg) | ![Edit](./screenshots/edit-delete.jpeg) |
 
 > **Note:** To see the images above, please place your screenshots in a folder named `screenshots` in the root directory and name them `home.png`, `create.png`, and `darkmode.png`.
 
