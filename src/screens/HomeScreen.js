@@ -1,227 +1,162 @@
-import React, { useEffect, useState, useContext } from 'react';
-import {
-  View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, StatusBar, ActivityIndicator, Platform, Dimensions
-} from 'react-native';
+import React, { useState, useContext, useCallback, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, ScrollView, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  getNotes,
-  deleteNote,
-  getSearchHistory,
-  saveSearchTerm,
-  clearSearchHistory
-} from '../storage/notesStorage';
-import { ThemeContext } from '../context/ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { ThemeContext } from '../context/ThemeContext';
+import { getNotes, getSearchHistory, saveToHistory, removeFromHistory, clearSearchHistory } from '../storage/notesStorage';
+import Header from '../components/Header';
 
 export default function HomeScreen({ navigation }) {
+  const { colors } = useContext(ThemeContext);
   const [notes, setNotes] = useState([]);
-  const [search, setSearch] = useState('');
-  const [searchHistory, setSearchHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  const { settings, updateSettings, colors } = useContext(ThemeContext);
-
-  useEffect(() => {
-    const unsub = navigation.addListener('focus', loadData);
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => { unsub(); clearInterval(timer); };
-  }, [navigation]);
+  const [history, setHistory] = useState([]);
+  const [query, setQuery] = useState('');
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const loadData = async () => {
-    setLoading(true);
-    try {
-      const [notesData, historyData] = await Promise.all([
-        getNotes(),
-        getSearchHistory()
-      ]);
-      setNotes(notesData || []);
-      setSearchHistory(historyData || []);
-    } catch (error) {
-      console.error("Loading Error:", error);
+    const n = await getNotes();
+    const h = await getSearchHistory();
+    setNotes(n);
+    setHistory(h);
+  };
+
+  useFocusEffect(useCallback(() => { loadData(); }, []));
+
+  // Funksioni që ruan kërkimin në histori
+  const handleSearch = async () => {
+    if (query.trim()) {
+      await saveToHistory(query.trim());
+      loadData(); // Rifreskon listën e historisë në ekran
     }
-    setLoading(false);
   };
 
-  const handleSearchSubmit = async (term) => {
-    if (!term.trim()) return;
-    await saveSearchTerm(term.trim());
-    const newHistory = await getSearchHistory();
-    setSearchHistory(newHistory);
-  };
-
-  const filteredNotes = notes.filter(n =>
-    n.title?.toLowerCase().includes(search.toLowerCase()) ||
-    n.content?.toLowerCase().includes(search.toLowerCase())
+  const filtered = notes.filter(n => 
+    n.title.toLowerCase().includes(query.toLowerCase()) ||
+    n.content.toLowerCase().includes(query.toLowerCase())
   );
 
-  const renderNote = ({ item }) => (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={() => navigation.navigate('EditNote', { note: item })}
-      style={[styles.card, { backgroundColor: colors.card }]}
-    >
-      <View style={styles.cardHeader}>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-          {item.title || 'Untitled'}
-        </Text>
-        <TouchableOpacity
-          onPress={async () => { await deleteNote(item.id); loadData(); }}
-          style={styles.deleteBtn}
-        >
-          <Ionicons name="trash-bin-outline" size={18} color="red" />
-        </TouchableOpacity>
-      </View>
-
-      <Text style={[styles.content, { color: colors.subText }]} numberOfLines={3}>
-        {item.content}
-      </Text>
-
-      <View style={styles.cardFooter}>
-        <View style={[styles.badge, { backgroundColor: colors.primary + '20' }]}>
-          <Text style={[styles.badgeText, { color: colors.primary }]}>{item.category || 'Other'}</Text>
-        </View>
-        <Text style={[styles.dateText, { color: colors.subText }]}>{item.date}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-        <StatusBar barStyle={settings.darkMode ? 'light-content' : 'dark-content'} />
-
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.timeLabel, { color: colors.primary }]}>
-              {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </Text>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Notes</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => updateSettings({ ...settings, darkMode: !settings.darkMode })}
-            style={[styles.iconButton, { backgroundColor: colors.card }]}
-          >
-            <Ionicons name={settings.darkMode ? "sunny" : "moon"} size={22} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* SEARCH BAR */}
-        <View style={[styles.searchBox, { backgroundColor: colors.card }]}>
-          <Ionicons name="search-outline" size={20} color={colors.subText} />
-          <TextInput
-            placeholder="Search on all devices..."
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <Animated.View style={{ opacity: headerOpacity, paddingHorizontal: 25 }}>
+        <Header title="Notes" />
+        
+        <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.subText} />
+          <TextInput 
+            placeholder="Search notes..." 
             placeholderTextColor={colors.subText}
-            style={[styles.searchInput, { color: colors.text }]}
-            value={search}
-            onChangeText={setSearch}
-            onSubmitEditing={(e) => handleSearchSubmit(e.nativeEvent.text)}
+            style={[styles.input, { color: colors.text }]}
+            value={query} 
+            onChangeText={setQuery}
+            onSubmitEditing={handleSearch} // Kjo e ruan në histori
+            returnKeyType="search"
           />
         </View>
 
-        {/* HISTORY CHIPS */}
-        {searchHistory.length > 0 && !search && (
-          <View style={{ height: 50, marginBottom: 15 }}>
-            <FlatList
-              horizontal
-              data={searchHistory}
-              keyExtractor={(item, idx) => `hist-${idx}`}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={() => setSearch(item)}
-                >
-                  <Ionicons name="cloud-done-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
-                  <Text style={{ color: colors.text, fontSize: 13 }}>{item}</Text>
+        {/* Shfaqja e historisë */}
+        <View style={styles.historyWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {history.map((h, i) => (
+              <View key={i} style={[styles.historyChip, { backgroundColor: colors.inputBg }]}>
+                <TouchableOpacity onPress={() => setQuery(h)}>
+                  <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>{h}</Text>
                 </TouchableOpacity>
-              )}
-              ListFooterComponent={
-                <TouchableOpacity style={styles.clearChip} onPress={async () => { await clearSearchHistory(); setSearchHistory([]); }}>
-                  <Text style={{ color: 'red', fontWeight: 'bold' }}>CLEAR</Text>
+                <TouchableOpacity onPress={async () => { await removeFromHistory(h); loadData(); }}>
+                  <Ionicons name="close-circle" size={16} color={colors.subText} style={{ marginLeft: 6 }} />
                 </TouchableOpacity>
-              }
-            />
-          </View>
-        )}
-
-        {/* MAIN LIST */}
-        <View style={{ flex: 1 }}>
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 50 }} />
-          ) : (
-            <FlatList
-              data={filteredNotes}
-              keyExtractor={item => item.id}
-              renderItem={renderNote}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={true}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={{ color: colors.subText }}>No notes found.</Text>
-                </View>
-              }
-            />
-          )}
+              </View>
+            ))}
+            {history.length > 0 && (
+              <TouchableOpacity onPress={async () => { await clearSearchHistory(); loadData(); }} style={styles.clearBtn}>
+                <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 12 }}>Clear All</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
         </View>
-      </SafeAreaView>
+      </Animated.View>
 
-      {/* BUTONI PLUS (FAB)*/}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }]}
+      <Animated.FlatList 
+        data={filtered} 
+        keyExtractor={item => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: 10, paddingBottom: 120 }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        renderItem={({ item, index }) => (
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            style={[
+              styles.bentoCard, 
+              { 
+                backgroundColor: colors.card, 
+                height: 200, // Lartësi fikse për të gjitha kartat
+                marginTop: index % 2 !== 0 ? 20 : 0 
+              }
+            ]} 
+            onPress={() => navigation.navigate('EditNote', { note: item })}
+          >
+            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
+              <Text style={[styles.cardSnippet, { color: colors.subText }]} numberOfLines={4}>{item.content}</Text>
+            </View>
+            <Text style={[styles.categoryText, { color: colors.primary }]}>{item.category}</Text>
+          </TouchableOpacity>
+        )}
+      />
+      
+      <TouchableOpacity 
+        style={[styles.premiumFab, { backgroundColor: colors.primary }]} 
         onPress={() => navigation.navigate('CreateNote')}
       >
-        <Ionicons name="add" size={40} color="#fff" />
+        <Ionicons name="add" size={35} color="#FFF" />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    height: Platform.OS === 'web' ? '100vh' : '100%',
+  container: { flex: 1 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 22, borderWidth: 1, marginTop: 15 },
+  input: { flex: 1, marginLeft: 10, fontWeight: '600' },
+  historyWrapper: { height: 40, marginTop: 10 },
+  historyChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 15, marginRight: 8 },
+  clearBtn: { justifyContent: 'center', paddingHorizontal: 10 },
+  bentoCard: { 
+    width: '48%', 
+    borderRadius: 30, 
+    padding: 20, 
+    elevation: 8, 
+    shadowColor: '#000', 
+    shadowOpacity: 0.1, 
+    shadowRadius: 15 
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, paddingTop: 10, marginBottom: 10, alignItems: 'center' },
-  timeLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1 },
-  headerTitle: { fontSize: 34, fontWeight: '900' },
-  iconButton: { width: 46, height: 46, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  searchBox: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, paddingHorizontal: 15, borderRadius: 20, height: 55, marginBottom: 15 },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 16 },
-  chip: { flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, marginRight: 10, borderWidth: 1, alignItems: 'center', height: 40 },
-  clearChip: { justifyContent: 'center', paddingHorizontal: 15, height: 40 },
-  listContent: { paddingHorizontal: 20, paddingBottom: 120 },
-  card: { padding: 20, marginBottom: 16, borderRadius: 24, elevation: 4, shadowOpacity: 0.1 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  title: { fontSize: 19, fontWeight: '700', flex: 1 },
-  content: { fontSize: 15, lineHeight: 22 },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, alignItems: 'center' },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  badgeText: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-  dateText: { fontSize: 12 },
-  deleteBtn: { padding: 5 },
-  fab: {
-    position: 'absolute',
-    bottom: 30,
-    right: 25,
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 10,
-    zIndex: 9999,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    ...Platform.select({
-      web: {
-        position: 'fixed',
-      }
-    })
-  },
-  emptyContainer: { flex: 1, alignItems: 'center', marginTop: 50 }
+  dot: { width: 8, height: 8, borderRadius: 4, marginBottom: 12 },
+  cardTitle: { fontSize: 17, fontWeight: '800', lineHeight: 22, marginBottom: 6 },
+  cardSnippet: { fontSize: 12, lineHeight: 18 },
+  categoryText: { fontSize: 9, fontWeight: '900', marginTop: 10, textTransform: 'uppercase', letterSpacing: 1 },
+  premiumFab: { 
+    position: 'absolute', 
+    bottom: 40, 
+    right: 30, 
+    width: 70, 
+    height: 70, 
+    borderRadius: 25, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    elevation: 15,
+    shadowColor: '#6366F1',
+    shadowOpacity: 0.4,
+    shadowRadius: 20
+  }
 });

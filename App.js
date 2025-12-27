@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './src/screens/HomeScreen';
 import CreateNoteScreen from './src/screens/CreateNoteScreen';
@@ -14,7 +14,14 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator 
+            screenOptions={{ 
+              headerShown: false,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+              cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS // Smooth slide
+            }}
+          >
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="CreateNote" component={CreateNoteScreen} />
             <Stack.Screen name="EditNote" component={EditNoteScreen} />

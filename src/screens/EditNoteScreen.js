@@ -1,79 +1,52 @@
 import React, { useState, useContext } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { updateNote } from '../storage/notesStorage';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../context/ThemeContext';
+import { updateNote, deleteNote } from '../storage/notesStorage';
 
 export default function EditNoteScreen({ route, navigation }) {
   const { note } = route.params;
   const { colors } = useContext(ThemeContext);
-
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
-  const [category, setCategory] = useState(note.category);
-  const [otherCategory, setOtherCategory] = useState('');
-
-  const saveNote = async () => {
-    const finalCategory = category === 'Other' && otherCategory ? otherCategory : category;
-    await updateNote({ ...note, title, content, category: finalCategory });
-    navigation.goBack();
-  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.navBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.navBtn}>
-          <Text style={{ color: colors.primary, fontSize: 17 }}>Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="close" size={30} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>Edit Note</Text>
-        <TouchableOpacity onPress={saveNote} style={styles.navBtn}>
-          <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 17 }}>Save</Text>
-        </TouchableOpacity>
+        <View style={styles.actions}>
+          <TouchableOpacity onPress={async () => { await deleteNote(note.id); navigation.goBack(); }}>
+            <Ionicons name="trash-outline" size={24} color={colors.danger} style={{ marginRight: 20 }} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.doneBtn, { backgroundColor: colors.text }]} 
+            onPress={async () => { await updateNote({...note, title, content}); navigation.goBack(); }}
+          >
+            <Text style={{ color: colors.background, fontWeight: '800' }}>Done</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 20 }}>
+      <ScrollView contentContainerStyle={styles.canvas} showsVerticalScrollIndicator={false}>
         <TextInput
-          style={[styles.titleInput, { color: colors.text }]}
+          style={[styles.heroTitle, { color: colors.text }]}
           value={title}
           onChangeText={setTitle}
-          placeholder="Title"
+          placeholder="Note Title"
           placeholderTextColor={colors.subText}
-        />
-
-        <View style={styles.categoryContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {['General', 'Work', 'Study', 'Other'].map(cat => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryChip,
-                  { backgroundColor: category === cat ? colors.primary : colors.inputBg }
-                ]}
-                onPress={() => setCategory(cat)}
-              >
-                <Text style={{ color: category === cat ? '#fff' : colors.text }}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {category === 'Other' && (
-          <TextInput
-            style={[styles.otherInput, { backgroundColor: colors.inputBg, color: colors.text }]}
-            value={otherCategory}
-            onChangeText={setOtherCategory}
-            placeholder="Category name"
-            placeholderTextColor={colors.subText}
-          />
-        )}
-
-        <TextInput
-          style={[styles.contentInput, { color: colors.text }]}
           multiline
+        />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <TextInput
+          style={[styles.bodyText, { color: colors.text }]}
           value={content}
           onChangeText={setContent}
-          textAlignVertical="top"
-          placeholder="Note content"
+          placeholder="Start writing..."
           placeholderTextColor={colors.subText}
+          multiline
         />
       </ScrollView>
     </SafeAreaView>
@@ -82,45 +55,11 @@ export default function EditNoteScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  navBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  navBtn: { 
-    padding: 4 
-  },
-  navTitle: { 
-    fontSize: 17, 
-    fontWeight: '600' 
-  },
-  titleInput: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    marginTop: 20, 
-    marginBottom: 15 
-  },
-  categoryContainer: { 
-    marginBottom: 20 
-  },
-  categoryChip: { 
-    paddingHorizontal: 16, 
-    paddingVertical: 8, 
-    borderRadius: 20, 
-    marginRight: 10 
-  },
-  otherInput: { 
-    padding: 12, 
-    borderRadius: 10, 
-    marginBottom: 20, 
-    fontSize: 16 
-  },
-  contentInput: { 
-    fontSize: 18, 
-    lineHeight: 28, 
-    minHeight: 300, 
-    paddingBottom: 40 
-  },
+  navBar: { flexDirection: 'row', justifyContent: 'space-between', padding: 25, alignItems: 'center' },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  doneBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 15 },
+  canvas: { paddingHorizontal: 30, paddingTop: 20 },
+  heroTitle: { fontSize: 42, fontWeight: '900', letterSpacing: -1.5 },
+  divider: { height: 2, width: 40, marginVertical: 30, borderRadius: 1 },
+  bodyText: { fontSize: 20, lineHeight: 32, fontWeight: '400' }
 });

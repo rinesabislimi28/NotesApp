@@ -1,29 +1,28 @@
 import React, { useContext } from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ThemeContext } from '../context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Header({ title }) {
-  const { settings, updateSettings } = useContext(ThemeContext);
+  const { settings, updateSettings, colors } = useContext(ThemeContext);
 
   return (
-    <View style={styles.header}>
-      <Text style={[styles.headerText, { color: settings.darkMode ? '#fff' : '#000' }]}>{title}</Text>
-      <Switch
-        value={settings.darkMode}
-        onValueChange={() =>
-          updateSettings({ ...settings, darkMode: !settings.darkMode })
-        }
-      />
+    <View style={styles.container}>
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      <TouchableOpacity 
+        style={[styles.toggleBtn, { backgroundColor: colors.inputBg }]} 
+        onPress={() => updateSettings({ ...settings, darkMode: !settings.darkMode })}
+      >
+        <Ionicons name={settings.darkMode ? "sunny" : "moon"} size={18} color={settings.darkMode ? "#FFD60A" : colors.primary} />
+        <Text style={[styles.toggleText, { color: colors.text }]}>{settings.darkMode ? "Light" : "Dark"}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  headerText: { fontSize: 26, fontWeight: 'bold' },
+  container: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+  title: { fontSize: 32, fontWeight: '800' },
+  toggleBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  toggleText: { marginLeft: 6, fontSize: 13, fontWeight: '600' }
 });

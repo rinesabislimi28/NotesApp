@@ -1,65 +1,86 @@
-# 📝 NotesApp - Real-time Firebase Cloud Notes
+# 📝 My Workspace - Notes App
 
-A modern, cross-platform note-taking application built with **React Native (Expo)** and **Firebase Firestore**. This app allows users to create, read, update, and delete (CRUD) notes in real-time with seamless synchronization across all devices.
+A modern, high-performance note-taking application built with **React Native (Expo)**. This project demonstrates advanced **Local Data Persistence** using AsyncStorage, clean architecture, and AI-assisted development practices.
 
-## 🚀 Features
+## 📱 App Preview
 
-* **Cloud Synchronization:** Notes are stored in Firebase Firestore and sync instantly across Web, Android, and iOS.
-* **Dark Mode Support:** Fully integrated light and dark themes using React Context API.
-* **Real-time Clock:** Dynamic clock display in the header updating every second.
-* **Smart Search:** Search through titles and content with a persistent search history (chips).
-* **Categorization:** Organize notes by categories like Work, Personal, Ideas, or Others.
-* **Responsive Design:** Optimized layouts for both mobile devices and web browsers, including a fixed Floating Action Button (FAB).
+Home Light Mode
+
+Home Dark Mode
+
+Create New Note
+
+Edit & Delete
+
+![Light](./screenshots/home-light-mode.jpeg)
+
+![Dark](./screenshots/home-dark-mode.jpeg)
+
+![Create](./screenshots/create-note.jpeg)
+
+![Edit](./screenshots/edit-delete.jpeg)
+
+> **Note:** To see the images above, please place your screenshots in a folder named `screenshots` in the root directory and name them `home.png`, `create.png`, and `darkmode.png`.
+
+## 🚀 Key Features
+
+-   **Full CRUD Functionality**: Create, Read, Update, and Delete notes seamlessly.
+-   **Asynchronous Local Storage**: Powered by `@react-native-async-storage/async-storage` to ensure data persists even after the app is closed.
+-   **Bento Grid UI**: A premium, dynamic grid layout that organizes notes beautifully on the home screen.
+-   **Categorization System**: Organize your thoughts using predefined categories: *Personal, Work, Finance, Ideas, and Health*.
+-   **Search & Persistence**: Real-time keyword search with a persistent "Recent Searches" history feature.
+-   **Dark Mode Support**: A fully integrated theme provider that saves your visual preferences locally.
+-   **Smooth Navigation**: Uses React Navigation with horizontal slide interpolations for a premium feel.
 
 ## 🛠 Tech Stack
 
-* **Frontend:** React Native (Expo)
-* **Backend:** Firebase Firestore
-* **Navigation:** React Navigation (Stack)
-* **State Management:** React Context API (for Themes and Settings)
-* **Icons:** Ionicons (@expo/vector-icons)
+-   **Framework**: React Native (Expo)
+-   **Storage**: AsyncStorage (Local Key-Value Storage)
+-   **Navigation**: React Navigation (Stack)
+-   **State Management**: React Context API (Global Theme & Settings)
+-   **Icons**: Expo Vector Icons (Ionicons)
 
-## 📦 Installation & Setup
+## 📁 Project Architecture
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/your-username/notesapp.git](https://github.com/your-username/notesapp.git)
-    cd notesapp
-    ```
+The project follows the modular structure recommended for scalable mobile applications:
 
-2.  **Install dependencies:**
+-   `src/components/`: Reusable UI components like the dynamic `Header.js`.
+-   `src/context/`: Global state management via `ThemeContext.js`.
+-   `src/screens/`: Main application logic (`HomeScreen`, `CreateNote`, `EditNote`).
+-   `src/storage/`: Centralized `notesStorage.js` handling all data serialization (JSON) and AsyncStorage logic.
+
+## 🤖 AI Usage Report
+
+In line with the course requirements, AI tools (ChatGPT/Copilot) were utilized to optimize the development workflow:
+
+1.  **Boilerplate Generation**: Used AI to quickly scaffold the initial component structures and folder hierarchy.
+2.  **Logic Refactoring**: AI assisted in optimizing the CRUD functions in `notesStorage.js` to handle asynchronous operations safely.
+3.  **Data Modeling**: Helped design the JSON schema for notes: `{ id, title, content, date, category }`.
+4.  **UI/UX Refinement**: AI helped generate the StyleSheet logic for the Bento-style grid and dynamic theme switching.
+
+**Key Prompts Used:**
+
+-   *"Create a reusable storage utility for React Native using AsyncStorage for a notes app."*
+-   *"Help me refactor a React Context to persist Dark Mode state using AsyncStorage."*
+-   *"Design a Bento-style grid for a FlatList in React Native."*
+
+## 📥 Installation & Setup
+
+1.  **Clone the repository**
+2.  **Install dependencies**:
+    
     ```bash
     npm install
     ```
-
-3.  **Configure Firebase:**
-    Update `src/firebaseConfig.js` with your Firebase project credentials:
-    ```javascript
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    ```
-
-4.  **Run the application:**
+    
+3.  **Launch the application**:
+    
     ```bash
     npx expo start
     ```
-    * Press `w` for Web.
-    * Press `a` for Android.
-    * Press `i` for iOS.
+    
 
-## 📂 Project Structure
+---
 
-* `src/screens/` — Contains screen components (HomeScreen, CreateNote, etc.).
-* `src/storage/` — Firebase Firestore logic and CRUD functions.
-* `src/context/` — Context providers for Theme and Settings.
-* `firebaseConfig.js` — Firebase SDK initialization.
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
+**Developer:** Rinesa Bislimi **Course:** Mobile App Development  
+**Instructor:** Agon Bajgora
